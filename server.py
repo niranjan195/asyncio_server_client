@@ -5,7 +5,7 @@ Implements asynchronous Server to handle multiple clients using event loops
 
 import os
 import asyncio
-from test_server import Server
+from async_server_client import Server
 
 # pathname for unix socket
 UNIX_PATHNAME = "/home/niranjan/server.socket"
