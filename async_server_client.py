@@ -1,7 +1,7 @@
-'''
+"""
 Asynchronous Server which listens to unix socket, TCP and UDP sockets using
 event loops
-'''
+"""
 
 import asyncio
 import socket
@@ -9,9 +9,9 @@ from concurrent.futures import CancelledError
 
 
 class UDPProtocol:
-    '''
+    """
     Udp Protocol to receive data from UDP sockets
-    '''
+    """
 
     def __init__(self, callback, on_con_lost):
         self.transport = None
@@ -25,31 +25,36 @@ class UDPProtocol:
         self.transport = transport
 
     def datagram_received(self, data, addr):
-        """
+        '''
         UDP protocol for receiving  UDP datagram
         Called Whenever a data is to be received
-        """
+        '''
         self.callback(data, addr, transport=self.transport)
 
     def connection_lost(self, exc):
+        '''
+        Removes client when connection lost with the client.
+        '''
         try:
             self.on_con_lost.set_result(True)
         except Exception:
-            pass
+            print(exc)
 
 
 class Server:
     """
     Asynchronous Server using asyncio module using sockets
     """
+    # pylint: disable=too-many-instance-attributes
+    # Eight is reasonable in this case.
 
     def __init__(self, host="localhost", port=9000, pathname=None):
         self.server_unix_socket = None
         self.server_tcp_socket = None
-        self.host = host
-        self.port = port
         self.client = None
         self.addr = None
+        self.host = host
+        self.port = port
         self.tcp_task = None
         self.unix_task = None
         self.count = 0
@@ -68,7 +73,8 @@ class Server:
         finally:
             print("Server listening for TCP and UDP sockets on",
                   (self.host, self.port))
-            print("Server listening for Unix sockets on", pathname)
+            if pathname:
+                print("Server listening for Unix sockets on", pathname)
 
     def create_unix_socket(self, pathname):
         '''
@@ -82,8 +88,6 @@ class Server:
             self.server_unix_socket.setblocking(False)
         except socket.error as err:
             print(err)
-        except Exception as exc:
-            print(exc)
 
     def create_stream_socket(self):
         '''
@@ -99,19 +103,16 @@ class Server:
             self.server_tcp_socket.setblocking(False)
         except socket.error as exc:
             print(exc)
-        except Exception as exc:
-            print(exc)
 
     async def accept_unix_connection(self, loop, unix_socket):
         '''
         Establishes connection with the unix socket
         '''
-        # print("Accept unix connection")
         self.client, self.addr = await loop.sock_accept(unix_socket)
         print("Accepted UNIX connection")
-        # self.udp_task.cancel()
         self.tcp_task.cancel()
-        self.unix_task.cancel()
+        if self.unix_task:
+            self.unix_task.cancel()
 
     async def accept_tcp_connection(self, loop, tcp_socket):
         '''
@@ -119,10 +120,14 @@ class Server:
         '''
         self.client, self.addr = await loop.sock_accept(tcp_socket)
         print("Accepted TCP connection")
-        self.unix_task.cancel()
         self.tcp_task.cancel()
+        if self.unix_task:
+            self.unix_task.cancel()
 
     async def udp_connection(self, loop, callback):
+        '''
+        Creates a UDP connection
+        '''
         on_con_lost = loop.create_future()
         transport, protocol = await loop.create_datagram_endpoint(
             lambda: UDPProtocol(callback, on_con_lost), local_addr=(self.host, self.port))
@@ -143,10 +148,10 @@ class Server:
         self.tcp_task = loop.create_task(self.accept_tcp_connection(
             loop, self.server_tcp_socket))
         if self.count == 0:
-            self.udp_task = loop.create_task(
+            udp_task = loop.create_task(
                 self.udp_connection(loop, callback))
+            tasks.append(udp_task)
         self.count += 1
-        tasks.append(self.udp_task)
         tasks.append(self.tcp_task)
         try:
             await asyncio.gather(*tasks)
@@ -154,21 +159,21 @@ class Server:
             pass
         return self.client, self.addr
 
-    async def recv(self, loop, client, addr, size=4096, callback=None):
+    async def recv(self, loop, client, addr, callback=None):
         '''
         Handles data receiving in asynchronous manner
         '''
         while True:
             try:
-                data = (await loop.sock_recv(client, size))
+                data = (await loop.sock_recv(client, 4096))
                 if not data:
                     break
                 if callback:
                     callback(data, addr, client_sock=client)
             except AttributeError as err:
                 print(err)
-            except Exception as e:
-                print("Client closed connection", e)
+            except Exception as exc:
+                print("Client closed connection", exc)
                 client.close()
 
     async def send(self, loop, client, data):
@@ -177,8 +182,8 @@ class Server:
         '''
         try:
             await loop.sock_sendall(client, data.encode('utf8'))
-        except Exception as e:
-            print(e)
+        except Exception as exc:
+            print(exc)
             self.close_client(client)
 
     def close_client(self, client):
@@ -236,8 +241,8 @@ class Client:
             self.client_socket.send(data)
         except AttributeError as err:
             print(err)
-        except Exception as e:
-            print("Cannot send data to the server", e)
+        except Exception as exc:
+            print("Cannot send data to the server", exc)
             self.close()
 
     def receive(self, size=4096):
@@ -250,8 +255,6 @@ class Client:
             return data
         except socket.error as err:
             print(err)
-        except Exception as e:
-            print(e)
 
     def close(self):
         '''

@@ -1,24 +1,28 @@
 '''
 Implements Unix Socket to communicate to the server
 '''
-
 from test_server import Client
 
 # Unix socket path name
-UNIX_PATHNAME = ''
+UNIX_PATHNAME = '/home/niranjan/server.socket'
 
 
-def main():
-    c = Client(pathname=UNIX_PATHNAME)
+def run_client():
+    '''
+    Function to run the Unix client socket
+    '''
+    client = Client(pathname=UNIX_PATHNAME)
     count = 0
     while count != 15:
-        data = input("Enter data")
+        data = str(count) + "UNIX"
+        # data = input("Enter data")
         count += 1
         print("Sending data", data)
-        c.send(data)
-        data = c.receive()
+        client.send(data)
+        data = client.receive()
         print("Received data", data)
-    c.close()
+    client.close()
 
 
-main()
+if __name__ == "__main__":
+    run_client()

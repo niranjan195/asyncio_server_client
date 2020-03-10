@@ -1,19 +1,25 @@
+'''
+Implements Tcp Socket to communicate to the server
+'''
 from test_server import Client
 
 
-def main():
-    print("client set")
-    c = Client(host="localhost", port=9000)
+def run_client():
+    '''
+    Function to run the Tcp client socket
+    '''
+    tcp_client = Client(host="localhost", port=9000)
     count = 0
     while count != 15:
-        # data = str(count) + "tcp"
-        data = input("Enter data")
+        data = str(count) + "tcp"
+        # data = input("Enter data")
         count += 1
         print("Sending data", data)
-        c.send(data)
-        data = c.receive()
+        tcp_client.send(data)
+        data = tcp_client.receive()
         print("Received data", data)
-    c.close()
+    tcp_client.close()
 
 
-main()
+if __name__ == "__main__":
+    run_client()

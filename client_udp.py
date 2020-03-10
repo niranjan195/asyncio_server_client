@@ -1,24 +1,27 @@
+'''
+Implements UDP Socket to communicate to the server
+'''
 import socket
 
 
-u1 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-
-server_address = ('localhost', 9000)
-
-# message = b'HI SERVER'
+SERVER_ADDRESS = ('localhost', 9000)
 
 
-def main():
-    print("client set")
+def run_client():
+    '''
+    Function to run the UDP client socket
+    '''
+    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     count = 0
     while count != 15:
-        # message = str(count) + "udp"
-        message = input("Enter data")
+        message = str(count) + "udp"
+        # message = input("Enter data")
         count += 1
-        u1.sendto(message.encode(), server_address)
-        data, server = u1.recvfrom(1024)
-        print("Data recevied from server is ", data)
-    u1.close()
+        udp_socket.sendto(message.encode(), SERVER_ADDRESS)
+        data, server = udp_socket.recvfrom(1024)
+        print("Data recevied from", server, " is ", data)
+    udp_socket.close()
 
 
-main()
+if __name__ == "__main__":
+    run_client()
